@@ -38,6 +38,6 @@ goose ps1_demo.goose
 
 Click the scene to capture the mouse; move it to look around, and press Tab to release or recapture.
 Use WASD to pan, Left/Right to rotate, Space to pause, and Escape to quit.
-The bottom prompt bar accepts a line, then echoes the last submitted prompt.
+The rounded prompt bar has only an input and Send button; Enter or Send prints the line to the launch terminal.
 
 See the [Goose tutorial](https://aardappel.github.io/goose/tutorial/) and [language reference](https://aardappel.github.io/goose/reference/) for more.

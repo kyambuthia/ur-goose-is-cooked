@@ -105,6 +105,29 @@ fn main() {
         gfx::close();
         return;
     }
+    let normal_style = ui::style(ctx);
+    var prompt_style = normal_style;
+    prompt_style.window.fixed_background = ui::style_item_color(ui::rgb(20, 29, 46));
+    prompt_style.window.background = ui::rgb(20, 29, 46);
+    prompt_style.window.border = 0.0;
+    prompt_style.window.rounding = 24.0;
+    prompt_style.window.padding = float2 { 12.0, 8.0 };
+    prompt_style.edit.normal = ui::style_item_color(ui::rgb(31, 42, 62));
+    prompt_style.edit.hover = ui::style_item_color(ui::rgb(39, 51, 73));
+    prompt_style.edit.active = ui::style_item_color(ui::rgb(39, 51, 73));
+    prompt_style.edit.border = 0.0;
+    prompt_style.edit.rounding = 16.0;
+    prompt_style.edit.text_normal = ui::rgb(238, 240, 246);
+    prompt_style.edit.text_hover = ui::rgb(238, 240, 246);
+    prompt_style.edit.text_active = ui::rgb(238, 240, 246);
+    prompt_style.button.normal = ui::style_item_color(ui::rgb(242, 119, 65));
+    prompt_style.button.hover = ui::style_item_color(ui::rgb(255, 145, 82));
+    prompt_style.button.active = ui::style_item_color(ui::rgb(219, 94, 52));
+    prompt_style.button.border = 0.0;
+    prompt_style.button.rounding = 16.0;
+    prompt_style.button.text_normal = ui::rgb(255, 255, 255);
+    prompt_style.button.text_hover = ui::rgb(255, 255, 255);
+    prompt_style.button.text_active = ui::rgb(255, 255, 255);
     let panel = ui::WINDOW_BORDER | ui::WINDOW_MOVABLE | ui::WINDOW_TITLE;
     var angle: f32 = 0.0;
     var paused = false;
@@ -115,7 +138,6 @@ fn main() {
     var mouse_captured = false;
     let camera_distance: f32 = 9.23;
     var prompt: u8[..128] = [];
-    var last_prompt: u8[..128] = [];
 
     while gfx::frame() {
         let dt = gfx::delta_time() as f32;
@@ -175,27 +197,22 @@ fn main() {
 
         let bar_width = min(max(size.x as i64 - 40, 280), 760);
         let bar_x = (size.x - bar_width) / 2;
-        let bar_y = size.y as i64 - 108;
-        if ui::begin(ctx, "PROMPT // INPUT", ui::rect(bar_x, bar_y, bar_width, 94),
-                     ui::WINDOW_BORDER | ui::WINDOW_TITLE) {
-            ui::layout_row_dynamic(ctx, 20.0, 1);
-            if last_prompt.len > 0 {
-                ui::label(ctx, str("LAST SENT  >  ", last_prompt), ui::TEXT_LEFT);
-            } else {
-                ui::label(ctx, "TYPE A PROMPT AND PRESS ENTER OR SEND", ui::TEXT_LEFT);
-            }
+        let bar_y = size.y as i64 - 82;
+        ui::set_style(ctx, prompt_style);
+        if ui::begin(ctx, "PROMPT_BAR", ui::rect(bar_x, bar_y, bar_width, 72),
+                     ui::WINDOW_NO_SCROLLBAR) {
             let ratios: f32[2] = [0.84, 0.16];
-            ui::layout_row(ctx, ui::DYNAMIC, 30.0, ratios);
+            ui::layout_row(ctx, ui::DYNAMIC, 38.0, ratios);
             let edited = ui::edit_string(ctx, ui::EDIT_FIELD | ui::EDIT_SIG_ENTER,
                                          prompt, ui::FILTER_DEFAULT);
             let send = ui::button_label(ctx, "SEND");
             if ((edited & ui::EDIT_COMMITTED) != 0 || send) && prompt.len > 0 {
-                last_prompt.resize(0);
-                last_prompt.append(prompt);
+                print("PROMPT> ", prompt, "\n");
                 prompt.resize(0);
             }
         }
         ui::end(ctx);
+        ui::set_style(ctx, normal_style);
 
         gfx::begin_screen(float4 { 0.025, 0.045, 0.09, 1.0 });
         gfx::bind(pipeline);
