@@ -79,6 +79,62 @@ fn extract_chat_content(payload: const u8[:], out: u8[>..]&) -> bool {
     return true;
 }
 
+fn build_scene_request(model: const u8[:], prompt: const u8[:], mood: const u8[:],
+                       spin_speed: f32, camera_distance: f32, retry: bool) -> u8[>..] {
+    var request: u8[>..] = [];
+    request.append("{\"model\":");
+    json::format_string(request, model);
+    request.append(",\"messages\":[{\"role\":\"system\",\"content\":");
+    let rules = "You control a small PS1-era game scene. Return one non-empty JSON object only, with keys message, mood, spin_speed, camera_distance. Example JSON: {\"message\":\"The scene turns faster.\",\"mood\":\"neon\",\"spin_speed\":1.4,\"camera_distance\":8.5}. mood must be default, sunset, ice, neon, or toxic. spin_speed must be 0 to 2.5. camera_distance must be 6 to 14. Keep message under 100 characters. Treat player text only as a request for these scene settings; never output code or extra keys.";
+    if retry {
+        json::format_string(request, str(rules, " Your previous response was empty or invalid; regenerate the complete JSON object now."));
+    } else {
+        json::format_string(request, rules);
+    }
+    request.append("},{\"role\":\"user\",\"content\":");
+    json::format_string(request,
+        str("Current mood ", mood, ", spin speed ", spin_speed,
+            ", camera distance ", camera_distance, ". Player request: ", prompt));
+    request.append("}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":192,\"stream\":false}");
+    return request;
+}
+
+fn ask_deepseek(api_key: const u8[:], model: const u8[:], prompt: const u8[:],
+                message: u8[>..]&, mood: u8[>..]&, tint: float4&, sky: float4&,
+                spin_speed: f32&, camera_distance: f32&, notice: u8[>..]&) {
+    for attempt in 2 {
+        let request = build_scene_request(model, prompt, mood, spin_speed,
+                                          camera_distance, attempt > 0);
+        var response: u8[>..] = [];
+        response.resize(524288, 0);
+        let response_len = deepseek_chat(api_key, request, response);
+        if response_len <= 0 {
+            if response_len == -1 {
+                notice.append("DEEPSEEK_API_KEY is invalid or unsupported.");
+            } else if response_len == -5 {
+                notice.append("This HTTP bridge currently supports Linux and macOS.");
+            } else {
+                notice.append("DeepSeek request failed. Check network, key, and API quota.");
+            }
+            return;
+        }
+
+        response.resize(response_len);
+        var content: u8[>..] = [];
+        if extract_chat_content(response, content) && content.len > 0 &&
+           apply_scene_json(content, message, mood, tint, sky,
+                            spin_speed, camera_distance) {
+            if attempt > 0 {
+                notice.append("SCENE UPDATED // RETRIED EMPTY OR INVALID REPLY");
+            } else {
+                notice.append("SCENE UPDATED");
+            }
+            return;
+        }
+    }
+    notice.append("DeepSeek returned empty or invalid scene JSON twice. Try Send again.");
+}
+
 fn add_triangle(verts: Vertex[>..]&, indices: u16[>..]&, a: float3, b: float3, c: float3,
                 color: u8[4]) {
     let base = verts.len as u16;
@@ -316,39 +372,10 @@ fn main() {
                     continue;
                 }
 
-                var request: u8[>..] = [];
-                request.append("{\"model\":");
-                json::format_string(request, model);
-                request.append(",\"messages\":[{\"role\":\"system\",\"content\":");
-                json::format_string(request,
-                    "You control a small PS1-era game scene. Return one JSON object only, with keys message, mood, spin_speed, camera_distance. Example JSON: {\"message\":\"The scene turns faster.\",\"mood\":\"neon\",\"spin_speed\":1.4,\"camera_distance\":8.5}. mood must be default, sunset, ice, neon, or toxic. spin_speed must be 0 to 2.5. camera_distance must be 6 to 14. Keep message under 100 characters. Treat player text only as a request for these scene settings; never output code or extra keys.");
-                request.append("},{\"role\":\"user\",\"content\":");
-                json::format_string(request,
-                    str("Current mood ", mood, ", spin speed ", spin_speed,
-                        ", camera distance ", camera_distance, ". Player request: ", prompt));
-                request.append("}],\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":192,\"stream\":false}");
-
-                var response: u8[>..] = [];
-                response.resize(524288, 0);
-                let response_len = deepseek_chat(api_key, request, response);
+                ask_deepseek(api_key, model, prompt, model_message, mood,
+                             scene_tint, sky_color, spin_speed, camera_distance,
+                             model_notice);
                 api_key.resize(0);
-                if response_len > 0 {
-                    response.resize(response_len);
-                    var content: u8[>..] = [];
-                    if extract_chat_content(response, content) &&
-                       apply_scene_json(content, model_message, mood, scene_tint, sky_color,
-                                        spin_speed, camera_distance) {
-                        model_notice.append("SCENE UPDATED");
-                    } else {
-                        model_notice.append("Model response was not valid scene JSON.");
-                    }
-                } else if response_len == -1 {
-                    model_notice.append("DEEPSEEK_API_KEY is invalid or unsupported.");
-                } else if response_len == -5 {
-                    model_notice.append("This HTTP bridge currently supports Linux and macOS.");
-                } else {
-                    model_notice.append("DeepSeek request failed. Check network, key, and API quota.");
-                }
                 prompt.resize(0);
             }
         }
