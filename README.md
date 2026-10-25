@@ -36,6 +36,6 @@ ordered dithering, and scanlines:
 goose ps1_demo.goose
 ```
 
-Use Left/Right to rotate, Space to pause, and Escape to quit.
+Use WASD to move the camera, Left/Right to rotate, Space to pause, and Escape to quit.
 
 See the [Goose tutorial](https://aardappel.github.io/goose/tutorial/) and [language reference](https://aardappel.github.io/goose/reference/) for more.

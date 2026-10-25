@@ -108,6 +108,8 @@ fn main() {
     let panel = ui::WINDOW_BORDER | ui::WINDOW_MOVABLE | ui::WINDOW_TITLE;
     var angle: f32 = 0.0;
     var paused = false;
+    var pan_x: f32 = 0.0;
+    var pan_z: f32 = 0.0;
 
     while gfx::frame() {
         let dt = gfx::delta_time() as f32;
@@ -116,10 +118,15 @@ fn main() {
         if !paused { angle += dt * 0.75; }
         if gfx::key_down("Left") { angle -= dt * 1.5; }
         if gfx::key_down("Right") { angle += dt * 1.5; }
+        if gfx::key_down("A") { pan_x -= dt * 3.0; }
+        if gfx::key_down("D") { pan_x += dt * 3.0; }
+        if gfx::key_down("W") { pan_z -= dt * 3.0; }
+        if gfx::key_down("S") { pan_z += dt * 3.0; }
 
         let size = gfx::screen_size();
         let aspect = size.x as f32 / max(size.y, 1);
-        let view = gfx::look_at(float3 { 0.0, 3.5, 8.5 }, float3 { 0.0, -0.1, 0.0 },
+        let view = gfx::look_at(float3 { pan_x, 3.5, 8.5 + pan_z },
+                                float3 { pan_x, -0.1, pan_z },
                                 float3 { 0.0, 1.0, 0.0 });
         let view_proj = gfx::mul(gfx::perspective(0.92, aspect, 0.1, 60.0), view);
         let tilt = gfx::rotate(float3 { 1.0, 0.0, 0.0 }, sin(angle * 0.7) * 0.08);
@@ -135,7 +142,9 @@ fn main() {
             ui::label(ctx, str("SCENE TRIANGLES  ", floor_index_count / 3 + pyramid_index_count / 3 * 3),
                       ui::TEXT_LEFT);
             ui::layout_row_dynamic(ctx, 24.0, 1);
-            ui::label(ctx, "LEFT / RIGHT ROTATE  |  SPACE PAUSE  |  ESC EXIT", ui::TEXT_LEFT);
+            ui::label(ctx, "WASD MOVE CAMERA  |  ARROWS ROTATE", ui::TEXT_LEFT);
+            ui::layout_row_dynamic(ctx, 24.0, 1);
+            ui::label(ctx, "SPACE PAUSE  |  ESC EXIT", ui::TEXT_LEFT);
         }
         ui::end(ctx);
 
