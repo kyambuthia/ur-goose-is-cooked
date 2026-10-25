@@ -114,6 +114,8 @@ fn main() {
     var camera_pitch: f32 = 0.40;
     var mouse_captured = false;
     let camera_distance: f32 = 9.23;
+    var prompt: u8[..128] = [];
+    var last_prompt: u8[..128] = [];
 
     while gfx::frame() {
         let dt = gfx::delta_time() as f32;
@@ -168,6 +170,30 @@ fn main() {
             ui::label(ctx, "MOUSE LOOK  |  WASD PAN  |  LEFT/RIGHT ROTATE", ui::TEXT_LEFT);
             ui::layout_row_dynamic(ctx, 24.0, 1);
             ui::label(ctx, "SPACE PAUSE  |  ESC EXIT", ui::TEXT_LEFT);
+        }
+        ui::end(ctx);
+
+        let bar_width = min(max(size.x as i64 - 40, 280), 760);
+        let bar_x = (size.x - bar_width) / 2;
+        let bar_y = size.y as i64 - 108;
+        if ui::begin(ctx, "PROMPT // INPUT", ui::rect(bar_x, bar_y, bar_width, 94),
+                     ui::WINDOW_BORDER | ui::WINDOW_TITLE) {
+            ui::layout_row_dynamic(ctx, 20.0, 1);
+            if last_prompt.len > 0 {
+                ui::label(ctx, str("LAST SENT  >  ", last_prompt), ui::TEXT_LEFT);
+            } else {
+                ui::label(ctx, "TYPE A PROMPT AND PRESS ENTER OR SEND", ui::TEXT_LEFT);
+            }
+            let ratios: f32[2] = [0.84, 0.16];
+            ui::layout_row(ctx, ui::DYNAMIC, 30.0, ratios);
+            let edited = ui::edit_string(ctx, ui::EDIT_FIELD | ui::EDIT_SIG_ENTER,
+                                         prompt, ui::FILTER_DEFAULT);
+            let send = ui::button_label(ctx, "SEND");
+            if ((edited & ui::EDIT_COMMITTED) != 0 || send) && prompt.len > 0 {
+                last_prompt.resize(0);
+                last_prompt.append(prompt);
+                prompt.resize(0);
+            }
         }
         ui::end(ctx);
 
