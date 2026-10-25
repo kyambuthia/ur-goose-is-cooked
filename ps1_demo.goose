@@ -110,6 +110,10 @@ fn main() {
     var paused = false;
     var pan_x: f32 = 0.0;
     var pan_z: f32 = 0.0;
+    var camera_yaw: f32 = 0.0;
+    var camera_pitch: f32 = 0.40;
+    var mouse_captured = false;
+    let camera_distance: f32 = 9.23;
 
     while gfx::frame() {
         let dt = gfx::delta_time() as f32;
@@ -123,17 +127,34 @@ fn main() {
         if gfx::key_down("W") { pan_z -= dt * 3.0; }
         if gfx::key_down("S") { pan_z += dt * 3.0; }
 
+        ui::input_from_gfx(ctx);
+        if gfx::key_pressed("Tab") {
+            let capture = !mouse_captured;
+            if gfx::set_mouse_relative(capture) { mouse_captured = capture; }
+        }
+        if !mouse_captured && gfx::mouse_pressed(gfx::MOUSE_LEFT) && !ui::wants_mouse(ctx) {
+            mouse_captured = gfx::set_mouse_relative(true);
+        }
+        if mouse_captured {
+            let mouse = gfx::mouse_delta();
+            camera_yaw -= mouse.x * 0.004;
+            camera_pitch = max(-0.25, min(0.95, camera_pitch + mouse.y * 0.004));
+        }
+
         let size = gfx::screen_size();
         let aspect = size.x as f32 / max(size.y, 1);
-        let view = gfx::look_at(float3 { pan_x, 3.5, 8.5 + pan_z },
-                                float3 { pan_x, -0.1, pan_z },
+        let horizontal = camera_distance * cos(camera_pitch);
+        let target = float3 { pan_x, -0.1, pan_z };
+        let eye = float3 { pan_x + horizontal * sin(camera_yaw),
+                           -0.1 + camera_distance * sin(camera_pitch),
+                           pan_z + horizontal * cos(camera_yaw) };
+        let view = gfx::look_at(eye, target,
                                 float3 { 0.0, 1.0, 0.0 });
         let view_proj = gfx::mul(gfx::perspective(0.92, aspect, 0.1, 60.0), view);
         let tilt = gfx::rotate(float3 { 1.0, 0.0, 0.0 }, sin(angle * 0.7) * 0.08);
         let spin = gfx::rotate(float3 { 0.0, 1.0, 0.0 }, angle);
 
-        ui::input_from_gfx(ctx);
-        if ui::begin(ctx, "SIGNAL // 1995", ui::rect(22, 22, 340, 170), panel) {
+        if ui::begin(ctx, "SIGNAL // 1995", ui::rect(22, 22, 390, 205), panel) {
             ui::layout_row_dynamic(ctx, 24.0, 1);
             ui::label(ctx, "LOW-POLY  /  15-BIT RGB", ui::TEXT_LEFT);
             ui::layout_row_dynamic(ctx, 24.0, 1);
@@ -142,7 +163,9 @@ fn main() {
             ui::label(ctx, str("SCENE TRIANGLES  ", floor_index_count / 3 + pyramid_index_count / 3 * 3),
                       ui::TEXT_LEFT);
             ui::layout_row_dynamic(ctx, 24.0, 1);
-            ui::label(ctx, "WASD MOVE CAMERA  |  ARROWS ROTATE", ui::TEXT_LEFT);
+            ui::label(ctx, "CLICK SCENE / TAB TO CAPTURE MOUSE", ui::TEXT_LEFT);
+            ui::layout_row_dynamic(ctx, 24.0, 1);
+            ui::label(ctx, "MOUSE LOOK  |  WASD PAN  |  LEFT/RIGHT ROTATE", ui::TEXT_LEFT);
             ui::layout_row_dynamic(ctx, 24.0, 1);
             ui::label(ctx, "SPACE PAUSE  |  ESC EXIT", ui::TEXT_LEFT);
         }

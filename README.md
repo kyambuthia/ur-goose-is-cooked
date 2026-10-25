@@ -36,6 +36,7 @@ ordered dithering, and scanlines:
 goose ps1_demo.goose
 ```
 
-Use WASD to move the camera, Left/Right to rotate, Space to pause, and Escape to quit.
+Click the scene to capture the mouse; move it to look around, and press Tab to release or recapture.
+Use WASD to pan, Left/Right to rotate, Space to pause, and Escape to quit.
 
 See the [Goose tutorial](https://aardappel.github.io/goose/tutorial/) and [language reference](https://aardappel.github.io/goose/reference/) for more.
