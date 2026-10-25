@@ -27,4 +27,15 @@ goose window.goose
 
 Press Escape or close the window to quit.
 
+## PS1-era graphics demo
+
+Run the low-poly scene with a checkerboard floor, 15-bit color quantization,
+ordered dithering, and scanlines:
+
+```sh
+goose ps1_demo.goose
+```
+
+Use Left/Right to rotate, Space to pause, and Escape to quit.
+
 See the [Goose tutorial](https://aardappel.github.io/goose/tutorial/) and [language reference](https://aardappel.github.io/goose/reference/) for more.
