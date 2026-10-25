@@ -17,4 +17,14 @@ goose build hello.goose
 ./hello
 ```
 
+## Open a window
+
+Run the resizable graphics window:
+
+```sh
+goose window.goose
+```
+
+Press Escape or close the window to quit.
+
 See the [Goose tutorial](https://aardappel.github.io/goose/tutorial/) and [language reference](https://aardappel.github.io/goose/reference/) for more.
